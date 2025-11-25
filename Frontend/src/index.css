@@ -113,13 +113,11 @@ All colors MUST be HSL.
     line-height: 1.6;
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     max-width: 100vw;
   }
 
   #root {
-    overflow-x: hidden;
     max-width: 100vw;
   }
   
@@ -165,6 +163,34 @@ All colors MUST be HSL.
 
   pre::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Global scrollbar styling - light mode */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.7);
+  }
+
+  /* Dark mode scrollbar */
+  .dark ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.7);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.9);
   }
 
   button,
