@@ -123,7 +123,7 @@ export async function createServer(): Promise<http.Server> {
     res.status(200).json({
       status: 'ok',
       uptime: process.uptime(),
-      timestamp: Date.now(),
+      timestamp: new Date().toISOString(),
     });
   });
 
@@ -131,7 +131,7 @@ export async function createServer(): Promise<http.Server> {
     const health = {
       status: 'ready',
       uptime: process.uptime(),
-      timestamp: Date.now(),
+      timestamp: new Date().toISOString(),
       checks: {
         memory: checkMemoryHealth(),
         cache: checkCacheHealth(),
