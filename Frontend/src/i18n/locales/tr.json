@@ -23,6 +23,79 @@
     "contactEmail": "contact@syrins.tech",
     "copyright": "© 2025 CorsBridge • Syrins."
   },
+  "package": {
+    "hero": {
+      "badge": "NPM Paketi Mevcut",
+      "title": "CorsBridge",
+      "titleHighlight": "NPM Paketi",
+      "subtitle": "JavaScript & TypeScript için Sıfır-Konfigürasyon CORS Proxy İstemcisi. Bir kez yükle, her yerde kullan.",
+      "viewNpm": "NPM'de Görüntüle",
+      "viewGithub": "GitHub Deposu",
+      "stats": {
+        "size": "Paket Boyutu",
+        "version": "Son Sürüm",
+        "license": "Lisans"
+      }
+    },
+    "installation": {
+      "title": "Hızlı Kurulum",
+      "subtitle": "Tercih ettiğiniz paket yöneticisini seçin",
+      "terminal": "Terminal"
+    },
+    "features": {
+      "title": "Neden CorsBridge?",
+      "subtitle": "Güvenilir bir CORS çözümüne zahmetsizce ihtiyaç duyan geliştiriciler için",
+      "zeroConfig": {
+        "title": "Sıfır Yapılandırma",
+        "description": "Kurulum yok, API anahtarı yok, sadece yükle ve kullan"
+      },
+      "typeSafe": {
+        "title": "Tip Güvenli",
+        "description": "Otomatik tamamlama ile tam TypeScript desteği"
+      },
+      "secure": {
+        "title": "Güvenli",
+        "description": "Backend'de SSRF koruması ve doğrulama"
+      },
+      "lightweight": {
+        "title": "Hafif",
+        "description": "Sadece 7.3 KB gzipped, bağımlılık yok"
+      }
+    },
+    "examples": {
+      "title": "Kod Örnekleri",
+      "subtitle": "CorsBridge'i kullanmanın ne kadar kolay olduğunu görün",
+      "basic": "Basit",
+      "advanced": "Gelişmiş",
+      "react": "React",
+      "vue": "Vue"
+    },
+    "api": {
+      "title": "API Referansı",
+      "corsFetch": {
+        "title": "corsFetch(url, options?)",
+        "description": "Proxy'lenmiş istekler yapmak için ana fonksiyon"
+      },
+      "convenience": {
+        "title": "Kolaylık Metodları",
+        "description": "Yaygın HTTP fiilleri için kısa yol metodları"
+      },
+      "errors": {
+        "title": "Hata Yönetimi",
+        "description": "Daha iyi hata yönetimi için tiplendirilmiş hata sınıfları",
+        "validation": "URL doğrulama, SSRF engelleme",
+        "rateLimit": "Rate limit aşıldı",
+        "timeout": "İstek zaman aşımı",
+        "gateway": "Hedef sunucu hatası"
+      }
+    },
+    "cta": {
+      "title": "Başlamaya Hazır mısınız?",
+      "subtitle": "CorsBridge'i şimdi yükleyin ve CORS sınırlamaları olmadan geliştirmeye başlayın",
+      "install": "NPM'den Yükle",
+      "docs": "Tam Dokümantasyonu Oku"
+    }
+  },
   "home": {
     "hero": {
       "badge": "Sonsuza Kadar Ücretsiz • Kayıt Yok",
@@ -33,6 +106,11 @@
       "copied": "Kopyalandı!",
       "viewDocs": "Dokümantasyona Git",
       "freeNote": "Sonsuza kadar ücretsiz. Kayıt gerekmez."
+    },
+    "npmBanner": {
+      "title": "Yeni: NPM Paketi Mevcut!",
+      "description": "JavaScript/TypeScript projeleri için sıfır-konfigürasyon istemci kütüphanemizi yükleyin",
+      "button": "NPM Paketini Görüntüle"
     },
     "features": {
       "title": "Geliştiriciler Neden CorsBridge'i Tercih Ediyor",

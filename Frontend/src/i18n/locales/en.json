@@ -23,6 +23,79 @@
     "contactEmail": "contact@syrins.tech",
     "copyright": "© 2025 CorsBridge • Syrins."
   },
+  "package": {
+    "hero": {
+      "badge": "NPM Package Available",
+      "title": "CorsBridge",
+      "titleHighlight": "NPM Package",
+      "subtitle": "Zero-Config CORS Proxy Client for JavaScript & TypeScript. Install once, use everywhere.",
+      "viewNpm": "View on NPM",
+      "viewGithub": "GitHub Repository",
+      "stats": {
+        "size": "Package Size",
+        "version": "Latest Version",
+        "license": "License"
+      }
+    },
+    "installation": {
+      "title": "Quick Installation",
+      "subtitle": "Choose your preferred package manager",
+      "terminal": "Terminal"
+    },
+    "features": {
+      "title": "Why CorsBridge?",
+      "subtitle": "Built for developers who need a reliable CORS solution without the hassle",
+      "zeroConfig": {
+        "title": "Zero Config",
+        "description": "No setup, no API keys, just install and use"
+      },
+      "typeSafe": {
+        "title": "Type Safe",
+        "description": "Full TypeScript support with auto-completion"
+      },
+      "secure": {
+        "title": "Secure",
+        "description": "SSRF protection and validation on backend"
+      },
+      "lightweight": {
+        "title": "Lightweight",
+        "description": "Only 7.3 KB gzipped, no dependencies"
+      }
+    },
+    "examples": {
+      "title": "Code Examples",
+      "subtitle": "See how easy it is to use CorsBridge",
+      "basic": "Basic",
+      "advanced": "Advanced",
+      "react": "React",
+      "vue": "Vue"
+    },
+    "api": {
+      "title": "API Reference",
+      "corsFetch": {
+        "title": "corsFetch(url, options?)",
+        "description": "Main function to make proxied requests"
+      },
+      "convenience": {
+        "title": "Convenience Methods",
+        "description": "Shorthand methods for common HTTP verbs"
+      },
+      "errors": {
+        "title": "Error Handling",
+        "description": "Typed error classes for better error handling",
+        "validation": "URL validation, SSRF blocks",
+        "rateLimit": "Rate limit exceeded",
+        "timeout": "Request timeout",
+        "gateway": "Target server error"
+      }
+    },
+    "cta": {
+      "title": "Ready to Get Started?",
+      "subtitle": "Install CorsBridge now and start building without CORS limitations",
+      "install": "Install from NPM",
+      "docs": "Read Full Documentation"
+    }
+  },
   "home": {
     "hero": {
       "badge": "Forever Free • No Signup",
@@ -33,6 +106,11 @@
       "copied": "Copied!",
       "viewDocs": "View Documentation",
       "freeNote": "Free forever. No registration required."
+    },
+    "npmBanner": {
+      "title": "New: NPM Package Available!",
+      "description": "Install our zero-config client library for JavaScript/TypeScript projects",
+      "button": "View NPM Package"
     },
     "features": {
       "title": "Why Developers Choose CorsBridge",
