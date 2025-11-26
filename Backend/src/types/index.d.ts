@@ -20,6 +20,8 @@ declare global {
 			spanId?: string;
 			parentSpanId?: string;
 			traceFlags?: string;
+			/** Optional per-request body size limit determined by validators */
+			bodySizeLimitBytes?: number;
 		}
 
 		interface Response {

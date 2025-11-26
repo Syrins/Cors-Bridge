@@ -55,6 +55,10 @@ async function resolveAddresses(hostname: string): Promise<string[]> {
 }
 
 async function assertNotPrivate(hostname: string): Promise<void> {
+  if (process.env.ALLOW_PRIVATE_NETWORKS === 'true') {
+    return;
+  }
+
   if (isBlockedHostname(hostname)) {
     throw new ValidationError('Access to private/internal hosts is not allowed', 403);
   }

@@ -39,6 +39,8 @@ const hopByHopResponseHeaders = new Set([
 
 interface InFlightRequest {
 	promise: Promise<CachedResponse>;
+	resolve: (value: CachedResponse) => void;
+	reject: (reason: Error) => void;
 	timestamp: number;
 }
 
@@ -51,10 +53,54 @@ setInterval(() => {
 	for (const [key, request] of inFlightRequests.entries()) {
 		if (now - request.timestamp > timeout) {
 			inFlightRequests.delete(key);
-			logger.debug({ key }, 'Cleaned up stale in-flight request');
+			request.reject(new Error('In-flight cache request timed out'));
 		}
 	}
 }, 60_000).unref();
+
+function trackInFlightRequest(cacheKey: string): InFlightRequest {
+	let resolve: ((value: CachedResponse) => void) | null = null;
+	let reject: ((reason: Error) => void) | null = null;
+
+	const promise = new Promise<CachedResponse>((res, rej) => {
+		resolve = res;
+		reject = rej;
+	});
+
+	const entry: InFlightRequest = {
+		promise,
+		resolve: resolve!,
+		reject: reject!,
+		timestamp: Date.now(),
+	};
+
+	inFlightRequests.set(cacheKey, entry);
+	return entry;
+}
+
+function resolveInFlightRequest(cacheKey: string | undefined, payload: CachedResponse): void {
+	if (!cacheKey) {
+		return;
+	}
+	const entry = inFlightRequests.get(cacheKey);
+	if (!entry) {
+		return;
+	}
+	inFlightRequests.delete(cacheKey);
+	entry.resolve(payload);
+}
+
+function rejectInFlightRequest(cacheKey: string | undefined, error: Error): void {
+	if (!cacheKey) {
+		return;
+	}
+	const entry = inFlightRequests.get(cacheKey);
+	if (!entry) {
+		return;
+	}
+	inFlightRequests.delete(cacheKey);
+	entry.reject(error);
+}
 
 const proxy = httpProxy.createProxyServer({
 	changeOrigin: proxyConfig.changeOrigin,
@@ -68,37 +114,6 @@ const proxy = httpProxy.createProxyServer({
 
 proxy.on('proxyReq', handleProxyRequest);
 proxy.on('proxyRes', handleProxyResponse);
-
-proxy.on('proxyRes', (proxyRes: IncomingMessage, rawReq: IncomingMessage) => {
-	const req = rawReq as Request;
-	const statusCode = proxyRes.statusCode ?? 200;
-
-	if (statusCode >= 300 && statusCode < 400 && proxyRes.headers.location) {
-		req.redirectCount = (req.redirectCount ?? 0) + 1;
-
-		if (req.redirectCount > proxyConfig.maxRedirects) {
-			logger.warn(
-				{
-					requestId: req.requestId,
-					redirectCount: req.redirectCount,
-					maxRedirects: proxyConfig.maxRedirects,
-					location: proxyRes.headers.location,
-				},
-				'Redirect limit exceeded',
-			);
-			proxyRes.destroy(new BadGatewayError('Target exceeded redirect limit'));
-		} else {
-			logger.debug(
-				{
-					requestId: req.requestId,
-					redirectCount: req.redirectCount,
-					location: proxyRes.headers.location,
-				},
-				'Following redirect',
-			);
-		}
-	}
-});
 
 export const proxyRouter = Router();
 
@@ -159,13 +174,6 @@ proxyRouter.all('*', (req: Request, res: Response, next: NextFunction) => {
 		const inFlight = inFlightRequests.get(cacheKey);
 		if (inFlight) {
 			metricsService.recordCache('dedupe');
-			logger.debug(
-				{
-					requestId: req.requestId,
-					cacheKey,
-				},
-				'Request deduplicated - waiting for in-flight request',
-			);
 
 			void inFlight.promise
 				.then((cachedResponse) => {
@@ -184,6 +192,8 @@ proxyRouter.all('*', (req: Request, res: Response, next: NextFunction) => {
 			return;
 		}
 
+		trackInFlightRequest(cacheKey);
+
 		res.setHeader('X-Proxy-Cache', 'MISS');
 		metricsService.recordCache('miss');
 	} else {
@@ -193,6 +203,7 @@ proxyRouter.all('*', (req: Request, res: Response, next: NextFunction) => {
 
 	const cleanupBodyListener = attachBodySizeGuard(req);
 	attachClientTimeout(req);
+	prepareProxyRequestHeaders(req);
 
 	const proxyOptions = buildProxyOptions(targetUrl);
 
@@ -205,27 +216,46 @@ proxyRouter.all('*', (req: Request, res: Response, next: NextFunction) => {
 			},
 			'Client aborted request before completion',
 		);
+		rejectInFlightRequest(req.cacheKey, new GatewayTimeoutError('Client aborted request before completion'));
 	});
 
 	proxy.web(req, res, proxyOptions, (error) => {
 		cleanupBodyListener();
-		
-		if (error) {
-			recordTargetFailure(targetHost);
-			
-			logger.error(
+
+		if (!error) {
+			return;
+		}
+
+		recordTargetFailure(targetHost);
+		const mappedError = mapProxyError(error);
+		rejectInFlightRequest(req.cacheKey, mappedError);
+
+		logger.error(
+			{
+				requestId: req.requestId,
+				method: req.method,
+				target: targetUrl,
+				code: (error as ProxyError).code ?? error.name,
+				message: error.message,
+			},
+			'Proxy request failed',
+		);
+
+		if (!isResponseWritable(res)) {
+			logger.warn(
 				{
 					requestId: req.requestId,
-					method: req.method,
 					target: targetUrl,
-					code: (error as ProxyError).code ?? error.name,
-					message: error.message,
 				},
-				'Proxy request failed',
+				'Skipping proxy error response because client connection already closed',
 			);
+			if (!res.writableEnded && !res.writableFinished && !(res as any).destroyed) {
+				res.end();
+			}
+			return;
 		}
-		
-		next(mapProxyError(error));
+
+		next(mappedError);
 	});
 });
 
@@ -237,7 +267,7 @@ function attachClientTimeout(req: Request): void {
 
 function attachBodySizeGuard(req: Request): () => void {
 	let bytesRead = 0;
-	const limit = securityConfig.maxBodySizeBytes;
+	const limit = Math.min(securityConfig.maxBodySizeBytes, req.bodySizeLimitBytes ?? securityConfig.maxBodySizeBytes);
 
 	const onData = (chunk: Buffer): void => {
 		bytesRead += chunk.length;
@@ -266,30 +296,59 @@ function handleProxyRequest(proxyReq: ClientRequest, rawReq: IncomingMessage): v
 		return;
 	}
 
-	stripHeaders.forEach((header) => {
-		proxyReq.removeHeader(header);
-	});
-
-	if (!proxyConfig.passThroughOrigin) {
-		proxyReq.removeHeader('origin');
-		proxyReq.removeHeader('referer');
-	}
-
-	if (!proxyConfig.preserveHostHeader) {
-		const targetUrl = new URL(req.targetUrl);
-		proxyReq.setHeader('host', targetUrl.host);
-	}
-
-	if (req.requestId) {
-		proxyReq.setHeader('x-request-id', req.requestId);
-	}
-
 	const abortHandler = (): void => {
 		proxyReq.destroy();
 	};
 
 	rawReq.once('aborted', abortHandler);
 	rawReq.once('close', () => rawReq.off('aborted', abortHandler));
+}
+
+function prepareProxyRequestHeaders(req: Request): void {
+	const headers = req.headers;
+
+	stripHeaders.forEach((header) => {
+		if (header in headers) {
+			delete headers[header];
+		}
+	});
+
+	if (!proxyConfig.passThroughOrigin) {
+		delete headers.origin;
+		delete headers.referer;
+	}
+
+	if (req.requestId) {
+		headers['x-request-id'] = req.requestId;
+	}
+
+	if (!proxyConfig.preserveHostHeader && req.targetUrl) {
+		headers.host = new URL(req.targetUrl).host;
+	}
+}
+
+function enforceRedirectLimits(req: Request, proxyRes: IncomingMessage): boolean {
+	const statusCode = proxyRes.statusCode ?? 200;
+	if (statusCode < 300 || statusCode >= 400 || !proxyRes.headers.location) {
+		return false;
+	}
+
+	req.redirectCount = (req.redirectCount ?? 0) + 1;
+	if (req.redirectCount <= proxyConfig.maxRedirects) {
+		return false;
+	}
+
+	logger.warn(
+		{
+			requestId: req.requestId,
+			redirectCount: req.redirectCount,
+			maxRedirects: proxyConfig.maxRedirects,
+			location: proxyRes.headers.location,
+		},
+		'Redirect limit exceeded',
+	);
+	proxyRes.destroy(new BadGatewayError('Target exceeded redirect limit'));
+	return true;
 }
 
 function handleProxyResponse(
@@ -300,6 +359,10 @@ function handleProxyResponse(
 	const req = _rawReq as Request;
 	const res = rawRes as unknown as Response;
 	let transferred = 0;
+
+	if (enforceRedirectLimits(req, proxyRes)) {
+		return;
+	}
 
 	const cacheCollector = initCacheCollector(req, proxyRes);
 	const targetOrigin = req.targetUrl ? getTargetOrigin(req.targetUrl) : null;
@@ -382,9 +445,50 @@ function handleProxyResponse(
 		}
 	});
 
-	if (proxyConfig.exposeResponseHeaders.length > 0) {
-		res.setHeader('Access-Control-Expose-Headers', proxyConfig.exposeResponseHeaders.join(', '));
+	if (proxyConfig.exposeResponseHeaders.length > 0 && isResponseWritable(res)) {
+		const mergedExposeHeaders = buildExposeHeaderValue(
+			res.getHeader('Access-Control-Expose-Headers') ?? undefined,
+			proxyConfig.exposeResponseHeaders,
+		);
+
+		if (mergedExposeHeaders) {
+			res.setHeader('Access-Control-Expose-Headers', mergedExposeHeaders);
+		}
 	}
+}
+
+function buildExposeHeaderValue(
+	existing: number | string | string[] | undefined,
+	extra: readonly string[],
+): string | null {
+	const headerSet = new Set<string>();
+
+	const appendValues = (value: string | number | string[] | undefined): void => {
+		if (typeof value === 'undefined') {
+			return;
+		}
+
+		if (Array.isArray(value)) {
+			value.forEach((entry) => appendValues(entry));
+			return;
+		}
+
+		const normalized = value.toString();
+		normalized
+			.split(',')
+			.map((segment) => segment.trim())
+			.filter(Boolean)
+			.forEach((segment) => headerSet.add(segment));
+	};
+
+	appendValues(existing);
+	extra.forEach((entry) => appendValues(entry));
+
+	if (headerSet.size === 0) {
+		return null;
+	}
+
+	return Array.from(headerSet).join(', ');
 }
 
 function buildProxyOptions(target: string): EnhancedServerOptions {
@@ -460,6 +564,15 @@ function isRequestCacheable(req: Request): boolean {
 }
 
 function respondFromCache(res: Response, cached: CachedResponse): void {
+	if (!isResponseWritable(res)) {
+		logger.warn(
+			{
+				requestId: res.requestId,
+			},
+			'Skipping cache replay because response is already closed',
+		);
+		return;
+	}
 	Object.entries(cached.headers).forEach(([key, value]) => {
 		res.setHeader(key, value as string | readonly string[]);
 	});
@@ -467,6 +580,7 @@ function respondFromCache(res: Response, cached: CachedResponse): void {
 	metricsService.recordCache('hit');
 	res.status(cached.status).send(cached.body);
 }
+
 
 function initCacheCollector(
 	req: Request,
@@ -478,15 +592,18 @@ function initCacheCollector(
 
 	const statusCode = proxyRes.statusCode ?? 200;
 	if (statusCode < 200 || statusCode >= 300) {
+		rejectInFlightRequest(req.cacheKey, new Error('Response status not cacheable'));
 		return null;
 	}
 
 	if (proxyRes.headers['set-cookie']) {
+		rejectInFlightRequest(req.cacheKey, new Error('Response contains Set-Cookie header'));
 		return null;
 	}
 
 	const cacheControl = proxyRes.headers['cache-control'];
 	if (typeof cacheControl === 'string' && /no-store|private/i.test(cacheControl)) {
+		rejectInFlightRequest(req.cacheKey, new Error('Response marked as uncacheable'));
 		return null;
 	}
 
@@ -494,6 +611,7 @@ function initCacheCollector(
 	if (typeof contentLengthHeader === 'string') {
 		const contentLength = Number(contentLengthHeader);
 		if (Number.isFinite(contentLength) && contentLength > cacheConfig.maxBodyBytes) {
+			rejectInFlightRequest(req.cacheKey, new Error('Content-Length exceeds cache limit'));
 			return null;
 		}
 	}
@@ -503,19 +621,6 @@ function initCacheCollector(
 	let settled = false;
 	const cacheKey = req.cacheKey!;
 
-	let resolveInFlight: ((value: CachedResponse) => void) | null = null;
-	let rejectInFlight: ((reason: Error) => void) | null = null;
-
-	const inFlightPromise = new Promise<CachedResponse>((resolve, reject) => {
-		resolveInFlight = resolve;
-		rejectInFlight = reject;
-	});
-
-	inFlightRequests.set(cacheKey, {
-		promise: inFlightPromise,
-		timestamp: Date.now(),
-	});
-
 	const abort = (reason?: string): void => {
 		if (settled) {
 			return;
@@ -523,10 +628,7 @@ function initCacheCollector(
 		settled = true;
 		chunks.length = 0;
 		metricsService.recordCache('error');
-		inFlightRequests.delete(cacheKey);
-		if (rejectInFlight) {
-			rejectInFlight(new Error(reason ?? 'Cache collection aborted'));
-		}
+		rejectInFlightRequest(cacheKey, new Error(reason ?? 'Cache collection aborted'));
 	};
 
 	return {
@@ -537,15 +639,6 @@ function initCacheCollector(
 
 			const len = chunk.length;
 			if (collected + len > cacheConfig.maxBodyBytes) {
-				logger.debug(
-					{
-						requestId: req.requestId,
-						collected,
-						chunkSize: len,
-						maxBodyBytes: cacheConfig.maxBodyBytes,
-					},
-					'Cache collection aborted: size limit exceeded',
-				);
 				abort('Response too large to cache');
 				return;
 			}
@@ -571,10 +664,7 @@ function initCacheCollector(
 
 			cacheService.set(cacheKey, cachedResponse);
 			settled = true;
-			if (resolveInFlight) {
-				resolveInFlight(cachedResponse);
-			}
-			inFlightRequests.delete(cacheKey);
+			resolveInFlightRequest(cacheKey, cachedResponse);
 		},
 		abort,
 	};
@@ -617,4 +707,18 @@ function recordTargetSuccess(origin: string | null): void {
 		return;
 	}
 	circuitBreakerService.recordSuccess(origin);
+}
+
+function isResponseWritable(res: Response): boolean {
+	const serverResponse = res as unknown as ServerResponse;
+	if (res.headersSent) {
+		return false;
+	}
+	if (serverResponse.writableEnded || serverResponse.writableFinished) {
+		return false;
+	}
+	if ((serverResponse as { destroyed?: boolean }).destroyed) {
+		return false;
+	}
+	return true;
 }

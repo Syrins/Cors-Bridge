@@ -53,14 +53,55 @@ const createLimiter = (store?: Store): RateLimitRequestHandler =>
 currentLimiter = createLimiter();
 
 if (rateLimitConfig.enableRedis && rateLimitConfig.redisUrl) {
-  redisClient = createClient({ url: rateLimitConfig.redisUrl });
-  redisClient.on('error', (error) => {
-    logger.error({ error }, 'Redis rate-limit client error');
+  let redisInitialized = false;
+  let redisErrorLogged = false;
+
+  redisClient = createClient({
+    url: rateLimitConfig.redisUrl,
+    socket: {
+      connectTimeout: 5000,
+      reconnectStrategy: false,
+    },
   });
 
+  const cleanupRedis = async (): Promise<void> => {
+    if (redisClient) {
+      try {
+        redisClient.removeAllListeners();
+        await redisClient.quit();
+      } catch {
+      }
+      redisClient = null;
+    }
+  };
+
+  const errorHandler = (error: Error): void => {
+    if (!redisErrorLogged && !redisInitialized) {
+      redisErrorLogged = true;
+      logger.warn(
+        { error: { message: error.message, code: (error as any).code } },
+        'Redis connection error. Falling back to in-memory rate limiting.',
+      );
+      void cleanupRedis();
+    }
+  };
+
+  redisClient.on('error', errorHandler);
+
   void (async () => {
+    const connectionTimeout = setTimeout(() => {
+      if (!redisInitialized) {
+        redisErrorLogged = true;
+        logger.warn('Redis connection timeout. Using in-memory rate limiting.');
+        void cleanupRedis();
+      }
+    }, 5000);
+
     try {
       await redisClient!.connect();
+      clearTimeout(connectionTimeout);
+      redisInitialized = true;
+      redisClient!.off('error', errorHandler);
       logger.info('Redis rate-limit client connected');
 
       const redisStore = new RedisStore({
@@ -70,9 +111,14 @@ if (rateLimitConfig.enableRedis && rateLimitConfig.redisUrl) {
       currentLimiter = createLimiter(redisStore);
       logger.info('Redis-backed rate limiter enabled');
     } catch (error) {
-      logger.error({ error }, 'Failed to initialize Redis rate limiter. Using in-memory store.');
-      await redisClient?.quit().catch(() => undefined);
-      redisClient = null;
+      clearTimeout(connectionTimeout);
+      redisErrorLogged = true;
+      redisInitialized = false;
+      logger.warn(
+        { error: { message: (error as Error).message, code: (error as any).code } },
+        'Failed to initialize Redis rate limiter. Using in-memory store.',
+      );
+      await cleanupRedis();
     }
   })();
 } else if (rateLimitConfig.enableRedis) {

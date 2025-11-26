@@ -38,37 +38,6 @@ export function bodyValidationMiddleware(req: Request, _res: Response, next: Nex
     }
   }
 
-  let bytesRead = 0;
-  let errored = false;
-
-  const onData = (chunk: Buffer): void => {
-    if (errored) {
-      return;
-    }
-    bytesRead += chunk.length;
-    if (bytesRead > limit) {
-      errored = true;
-      req.off('data', onData);
-      req.destroy();
-      next(new PayloadTooLargeError(`${isJson ? 'JSON' : 'Text'} body exceeds ${limit} bytes limit`));
-    }
-  };
-
-  const onError = (error: Error): void => {
-    if (errored) {
-      return;
-    }
-    errored = true;
-    req.off('data', onData);
-    next(new ValidationError('Error reading request body', 400, undefined, error));
-  };
-
-  req.on('data', onData);
-  req.once('error', onError);
-  req.once('end', () => {
-    req.off('data', onData);
-    req.off('error', onError);
-  });
-
+  req.bodySizeLimitBytes = limit;
   next();
 }

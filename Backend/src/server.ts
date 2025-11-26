@@ -2,6 +2,7 @@ import http from 'http';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import compression from 'compression';
 import helmet from 'helmet';
+import v8 from 'v8';
 
 import { securityConfig } from './config/security.config';
 import { corsHandler } from './middleware/corsHandler';
@@ -19,10 +20,33 @@ import { metricsService } from './services/metrics.service';
 import { analyticsTracker } from './services/analytics.service';
 import { cacheService } from './services/cache.service';
 
+const MEMORY_WARNING_PERCENT = (() => {
+  const value = Number(process.env.HEALTH_MEMORY_WARNING_PERCENT);
+  if (Number.isFinite(value)) {
+    return Math.min(Math.max(value, 1), 100);
+  }
+  return 92;
+})();
+
+const MIN_HEAP_FLOOR_MB = (() => {
+  const value = Number(process.env.HEALTH_MIN_HEAP_MB);
+  if (Number.isFinite(value)) {
+    return Math.max(value, 64);
+  }
+  return 256;
+})();
+
 let isShuttingDown = false;
 
 export function setShuttingDownState(value: boolean): void {
   isShuttingDown = value;
+}
+
+function applyHealthCors(res: Response): void {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Max-Age', '600');
 }
 
 /**
@@ -33,9 +57,11 @@ function checkMemoryHealth(): { status: string; heapUsed: number; heapTotal: num
   const heapUsedMB = Math.round(usage.heapUsed / 1024 / 1024);
   const heapTotalMB = Math.round(usage.heapTotal / 1024 / 1024);
   const rssMB = Math.round(usage.rss / 1024 / 1024);
+  const heapLimitMB = Math.round(v8.getHeapStatistics().heap_size_limit / 1024 / 1024);
 
-  const heapUsagePercent = (usage.heapUsed / usage.heapTotal) * 100;
-  const status = heapUsagePercent > 80 ? 'warning' : 'ok';
+  const effectiveHeapTotalMB = Math.max(heapTotalMB, MIN_HEAP_FLOOR_MB, heapLimitMB);
+  const heapUsagePercent = (heapUsedMB / effectiveHeapTotalMB) * 100;
+  const status = heapUsagePercent > MEMORY_WARNING_PERCENT ? 'warning' : 'ok';
 
   return {
     status,
@@ -119,7 +145,16 @@ export async function createServer(): Promise<http.Server> {
   app.use(corsHandler);
   app.use(bodyValidationMiddleware);
 
+  const healthRoutes = ['/health', '/health/ready', '/health/live'];
+  healthRoutes.forEach((path) => {
+    app.options(path, (_req: Request, res: Response) => {
+      applyHealthCors(res);
+      res.status(204).end();
+    });
+  });
+
   app.get('/health', (_req: Request, res: Response) => {
+    applyHealthCors(res);
     res.status(200).json({
       status: 'ok',
       uptime: process.uptime(),
@@ -128,6 +163,7 @@ export async function createServer(): Promise<http.Server> {
   });
 
   app.get('/health/ready', async (_req: Request, res: Response) => {
+    applyHealthCors(res);
     const health = {
       status: 'ready',
       uptime: process.uptime(),
@@ -144,6 +180,7 @@ export async function createServer(): Promise<http.Server> {
   });
 
   app.get('/health/live', (_req: Request, res: Response) => {
+    applyHealthCors(res);
     res.status(200).json({
       status: 'alive',
       uptime: process.uptime(),

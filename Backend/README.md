@@ -21,10 +21,10 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/corsbridge">
+  <a href="https://www.npmjs.com/package/cors-bridge">
     <img src="https://img.shields.io/npm/v/corsbridge.svg?style=for-the-badge&logo=npm&logoColor=white&color=CB3837" alt="NPM Package" />
   </a>
-  <a href="https://www.npmjs.com/package/corsbridge">
+  <a href="https://www.npmjs.com/package/cors-bridge">
     <img src="https://img.shields.io/npm/dm/corsbridge.svg?style=for-the-badge&logo=npm&logoColor=white&color=CB3837" alt="NPM Downloads" />
   </a>
 </p>
@@ -87,11 +87,11 @@ Cors-Bridge is intentionally compact on the outside, but architecturally robust 
 ### 📦 NPM Package Available
 
 ```bash
-npm install corsbridge
+npm install cors-bridge
 ```
 
 Zero-config CORS proxy client for your JavaScript/TypeScript projects.  
-👉 [NPM Package](https://www.npmjs.com/package/corsbridge) | [Documentation](https://cors.syrins.tech/package)
+👉 [NPM Package](https://www.npmjs.com/package/cors-bridge) | [Documentation](https://cors.syrins.tech/package)
 
 ---
 
@@ -108,6 +108,25 @@ This repository serves as a clean landing point to:
 ### ✔ Offer a corporate-grade, simplified overview
 
 All backend details live in the official docs linked above.
+
+---
+
+# 🛠 PM2 Automatic Recovery
+
+To set up PM2 for automatic recovery of the Cors-Bridge backend service, run the following command in the terminal:
+
+```bash
+npm run pm2:bootstrap
+```
+
+This script sequentially runs `npm run build`, `npm run pm2:start`, `npm run pm2:startup`, and `npm run pm2:setup-logrotate`. In other words, it builds the project, starts the service with PM2, registers automatic startup on reboot, and configures log rotation.
+
+For future updates, if PM2 crashes or processes are lost, use these commands:
+
+1. Restart the service: `npm run pm2:restart`
+2. If PM2 has completely shut down, restore saved processes: `npm run pm2:resurrect`
+
+With this setup, the backend will automatically restart if PM2 crashes or the machine reboots, and log files will be rotated regularly.
 
 ---
 

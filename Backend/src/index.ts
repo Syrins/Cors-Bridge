@@ -31,7 +31,7 @@ async function bootstrap(): Promise<void> {
 
   server.listen(port, host, () => {
     const localIp = getLocalIpAddress();
-    logger.info({ port, host, localIp }, '🚀 CorsBridge backend running • syrins.tech');
+    logger.info({ port, host, localIp }, 'CorsBridge backend running - syrins.tech');
   });
 }
 
@@ -45,13 +45,29 @@ function trackConnections(server: http.Server): Set<Socket> {
   return connections;
 }
 
+function serializeProcessError(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    const errno = error as NodeJS.ErrnoException;
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: errno.code,
+    };
+  }
+
+  return {
+    error,
+  };
+}
+
 function registerProcessHandlers(server: http.Server, connections: Set<Socket>): void {
   process.on('unhandledRejection', (reason) => {
-    logger.error({ reason }, 'Unhandled promise rejection');
+    logger.error({ reason: serializeProcessError(reason) }, 'Unhandled promise rejection');
   });
 
   process.on('uncaughtException', (error) => {
-    logger.error({ error }, 'Uncaught exception');
+    logger.error({ error: serializeProcessError(error) }, 'Uncaught exception');
     initiateShutdown('uncaughtException', server, connections, 1);
   });
 

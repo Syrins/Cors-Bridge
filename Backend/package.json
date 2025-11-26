@@ -7,7 +7,15 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "dev": "nodemon --config nodemon.json src/index.ts",
-    "lint": "eslint --ext .ts src"
+    "lint": "eslint --ext .ts src",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop corsbridge-backend || true",
+    "pm2:restart": "pm2 restart corsbridge-backend",
+    "pm2:logs": "pm2 logs corsbridge-backend",
+    "pm2:startup": "pm2 startup && pm2 save",
+    "pm2:resurrect": "pm2 resurrect",
+    "pm2:setup-logrotate": "pm2 install pm2-logrotate && pm2 set pm2-logrotate:max_size 50M && pm2 set pm2-logrotate:retain 3 && pm2 set pm2-logrotate:rotateInterval '0 0 * * *' && pm2 set pm2-logrotate:dateFormat YYYY-MM-DD && pm2 set pm2-logrotate:compress true && pm2 set pm2-logrotate:workerInterval 60",
+    "pm2:bootstrap": "npm run build && npm run pm2:start && npm run pm2:startup && npm run pm2:setup-logrotate"
   },
   "license": "MIT",
   "keywords": [
@@ -47,6 +55,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.0",
     "nodemon": "^3.0.2",
+    "pm2": "^5.4.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
