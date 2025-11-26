@@ -4,7 +4,7 @@
 
 #### **Public API • NPM Package • CLI Tool • React Playground**
 
-> **English README** — *Turkish Docs available below (Frontend & Backend)*
+> **English README** — *Turkish docs available below (Frontend & Backend)*
 
 <p align="center">
   <a href="https://www.npmjs.com/package/corsbridge">
@@ -19,16 +19,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/Docs/English.md">
+  <a href="https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/docs/English.md">
     <img src="https://img.shields.io/badge/Frontend%20EN-3498DB?style=for-the-badge" />
   </a>
-  <a href="https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/Docs/Turkish.md">
+  <a href="https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/docs/Turkish.md">
     <img src="https://img.shields.io/badge/Frontend%20TR-F39C12?style=for-the-badge" />
   </a>
-  <a href="https://github.com/Syrins/Cors-Bridge/blob/main/Backend/Docs/English.md">
+  <a href="https://github.com/Syrins/Cors-Bridge/blob/main/Backend/docs/English.md">
     <img src="https://img.shields.io/badge/Backend%20EN-3498DB?style=for-the-badge" />
   </a>
-  <a href="https://github.com/Syrins/Cors-Bridge/blob/main/Backend/Docs/Turkish.md">
+  <a href="https://github.com/Syrins/Cors-Bridge/blob/main/Backend/docs/Turkish.md">
     <img src="https://img.shields.io/badge/Backend%20TR-F39C12?style=for-the-badge" />
   </a>
 </p>
@@ -247,11 +247,11 @@ corsbridge https://example.com/data --out data.json
 
 ### ✔ Public and private deployment support
 
-Backend English Docs →
-**[https://github.com/Syrins/Cors-Bridge/blob/main/Backend/Docs/English.md](https://github.com/Syrins/Cors-Bridge/blob/main/Backend/Docs/English.md)**
+Backend English docs →
+**[https://github.com/Syrins/Cors-Bridge/blob/main/Backend/docs/English.md](https://github.com/Syrins/Cors-Bridge/blob/main/Backend/docs/English.md)**
 
-Backend Turkish Docs →
-**[https://github.com/Syrins/Cors-Bridge/blob/main/Backend/Docs/Turkish.md](https://github.com/Syrins/Cors-Bridge/blob/main/Backend/Docs/Turkish.md)**
+Backend Turkish docs →
+**[https://github.com/Syrins/Cors-Bridge/blob/main/Backend/docs/Turkish.md](https://github.com/Syrins/Cors-Bridge/blob/main/Backend/docs/Turkish.md)**
 
 ---
 
@@ -265,11 +265,11 @@ Backend Turkish Docs →
 * Health monitor
 * Status charts
 
-Frontend English Docs →
-**[https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/Docs/English.md](https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/Docs/English.md)**
+Frontend English docs →
+**[https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/docs/English.md](https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/docs/English.md)**
 
-Frontend Turkish Docs →
-**[https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/Docs/Turkish.md](https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/Docs/Turkish.md)**
+Frontend Turkish docs →
+**[https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/docs/Turkish.md](https://github.com/Syrins/Cors-Bridge/blob/main/Frontend/docs/Turkish.md)**
 
 ---
 
