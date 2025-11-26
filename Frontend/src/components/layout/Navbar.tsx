@@ -70,6 +70,7 @@ export const Navbar = () => {
     { name: t('nav.docs'), path: "/docs" },
     { name: t('nav.examples'), path: "/examples" },
     { name: t('nav.playground'), path: "/playground" },
+    { name: t('nav.package'), path: "/package" },
     { name: t('nav.status'), path: "/status" },
     { name: t('nav.donate'), path: "/donate" },
   ];
