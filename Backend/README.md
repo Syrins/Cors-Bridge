@@ -20,6 +20,15 @@
   <img src="https://img.shields.io/badge/Deploy-CDN%20Friendly-orange?style=flat-square" />
 </p>
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/corsbridge">
+    <img src="https://img.shields.io/npm/v/corsbridge.svg?style=for-the-badge&logo=npm&logoColor=white&color=CB3837" alt="NPM Package" />
+  </a>
+  <a href="https://www.npmjs.com/package/corsbridge">
+    <img src="https://img.shields.io/npm/dm/corsbridge.svg?style=for-the-badge&logo=npm&logoColor=white&color=CB3837" alt="NPM Downloads" />
+  </a>
+</p>
+
 ---
 
 <div align="center">
@@ -68,11 +77,21 @@ The banner integrates naturally with both themes, thanks to soft gradients, blur
 * ⚡ **Fast**: Lightweight Node.js engine optimized for low latency
 * 🔄 **Stable**: Request deduplication, caching layers, circuit-breakers
 * 🧭 **Developer First**: Clean endpoints and clear documentation
+* 📦 **NPM Package**: Zero-config client library for JavaScript/TypeScript
 * 🤖 **AI-Friendly**: Structured for ChatGPT, Grok, Claude & Copilot discovery
 * 🌐 **International**: Turkish and English documentation links
 * 🧱 **Enterprise-style architecture**
 
 Cors-Bridge is intentionally compact on the outside, but architecturally robust on the inside.
+
+### 📦 NPM Package Available
+
+```bash
+npm install corsbridge
+```
+
+Zero-config CORS proxy client for your JavaScript/TypeScript projects.  
+👉 [NPM Package](https://www.npmjs.com/package/corsbridge) | [Documentation](https://cors.syrins.tech/package)
 
 ---
 
