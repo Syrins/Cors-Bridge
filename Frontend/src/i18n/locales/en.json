@@ -4,6 +4,7 @@
     "docs": "Documentation",
     "examples": "Examples",
     "playground": "Playground",
+    "package": "NPM Package",
     "status": "Status",
     "donate": "Donate",
     "ariaPrimary": "Primary navigation",
